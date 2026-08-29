@@ -11,7 +11,8 @@
     "dev": "vite --host 0.0.0.0 --port 3000 --strictPort",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "preview": "vite preview --host 0.0.0.0 --port 3000 --strictPort"
+    "preview": "vite preview --host 0.0.0.0 --port 3000 --strictPort",
+    "report": "node scripts/report.mjs"
   },
   "dependencies": {
     "react": "19.2.0",

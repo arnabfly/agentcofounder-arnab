@@ -1,22 +1,11 @@
-Build the smallest maintainable application that covers every user journey detailed or implied by the product idea. Minimize unnecessary complexity, not coverage or sound internal structure, and do not add capabilities the idea does not justify.
+A finished generic tracker app already exists here. Do NOT write an application. Configure the frame in as few steps as possible:
 
-Work autonomously in the current directory. Do not ask clarifying questions. Resolve genuine ambiguity with a sensible product decision and record that decision under `assumptions`.
+1. Read `src/config.ts` and `src/frame/types.ts`. Read nothing else.
+2. Rewrite `src/config.ts` for the product idea: title, entity words, storageKey, fields (first field = the main label shown in the list), filterField (key of a select field, or null), flag (a field whose filled value means an "active/out/assigned" state, with labels, or null), quickActions that set/clear that field. Resolve ambiguity with a sensible product decision; note each decision for the assumptions list. Cover every journey the idea details or implies through config choices. Never omit an implied journey merely to simplify the application.
+3. Run: `mv src/journeys.dormant.tsx src/journeys.test.tsx` (never edit that file). It contains complete journey tests for everything the frame provides: add/edit/delete, validation, search, filter, flag set/clear + count, persistence, malformed-data recovery. Do NOT write additional tests unless you added new behavior beyond config.
+4. Write `report.meta.json` (root) with exactly: {"summary": "...", "implemented_features": ["..."], "assumptions": ["..."]}. Do NOT create or edit report.partial.json — a script owns it.
+5. Run `npm run report`. It runs the tests and writes report.partial.json from real results. If it prints failures, make the smallest possible fix (usually config.ts) and rerun. Never paste full logs to yourself; act on the first error only.
+6. Run `npm run build`. Fix only real errors, minimally.
+7. Stop. No servers left running, no new dependencies, no other files changed.
 
-Required outcome:
-
-- The application starts with `npm run dev` at exactly `http://localhost:3000`.
-- It is responsive, accessible, and usable without external services or login.
-- Required user data survives a page refresh.
-- Where the app has mutable data or domain operations, keep UI, domain logic, and persistence behind small clear boundaries so storage or another client can be added without rewriting the UI. Do not add a backend or external API unless the idea requires one.
-- Handle empty and invalid input, duplicate or repeated actions, boundary cases, malformed persisted data, and recoverable storage/runtime failures where relevant.
-- Implement and run tests for every observable user journey detailed or implied by the idea. Never omit an implied journey merely to simplify the application.
-- Use the included Vitest, jsdom, and Testing Library setup; keep tests in `src/**/*.test.ts` or `src/**/*.test.tsx`.
-- Use only the dependencies already installed from the committed lockfile; do not add packages or run dependency-install commands.
-- Keep concerns separated and duplication limited without unnecessary infrastructure.
-- Before finishing, run `npm test` and `npm run build`, repairing failures.
-- Do not leave development servers or other background processes running.
-- Write `report.partial.json` at the application root using the shape described in `AGENTS.md`.
-- Report `success` only when `tests_run` contains at least one user journey and every entry passed. Use `partial` when any journey failed or was not run.
-- Do not write `result.json`; the challenge runner owns its audited telemetry fields.
-
-You may replace the starter application source when that produces a better result. Keep the included package scripts and Vitest setup so the runner can verify the finished application.
+Only if the idea truly requires behavior the frame cannot express through config: add minimal new code in new files plus one matching test file, then continue from step 4.

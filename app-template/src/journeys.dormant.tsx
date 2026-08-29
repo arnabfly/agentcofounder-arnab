@@ -1,0 +1,199 @@
+// DORMANT until renamed. Frame journey tests. Config-driven: they adapt to whatever src/config.ts
+// declares, so they keep passing after the agent fills in a new domain.
+// The AI never edits this file (it may ADD its own extra tests separately).
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { App } from "./App";
+import { config } from "./config";
+
+function sampleValue(fieldKey: string, suffix = "One"): string {
+  const f = config.fields.find((x) => x.key === fieldKey)!;
+  if (f.type === "select") return (f.options ?? [""])[0];
+  if (f.type === "number") return "42";
+  if (f.type === "date") return "2026-01-15";
+  return `${f.label} ${suffix}`;
+}
+
+async function addItem(suffix = "One") {
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+  for (const f of config.fields) {
+    const control = screen.getByLabelText(f.label);
+    const value = sampleValue(f.key, suffix);
+    if (f.type === "select") {
+      await user.selectOptions(control, value);
+    } else if (value !== "") {
+      await user.clear(control);
+      await user.type(control, value);
+    }
+  }
+  await user.click(screen.getByRole("button", { name: "Add" }));
+  return user;
+}
+
+const mainField = config.fields[0];
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+afterEach(() => {
+  cleanup();
+});
+
+describe("core user journeys", () => {
+  it(`adds a ${config.entityName} and shows it in the list`, async () => {
+    render(<App />);
+    await addItem();
+    expect(screen.getByText(sampleValue(mainField.key))).toBeInTheDocument();
+  });
+
+  it("keeps data after a page refresh", async () => {
+    const first = render(<App />);
+    await addItem();
+    first.unmount();
+    render(<App />); // simulates reopening the app
+    expect(screen.getByText(sampleValue(mainField.key))).toBeInTheDocument();
+  });
+
+  it("rejects a submission with a missing required field", async () => {
+    render(<App />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    const required = config.fields.filter((f) => f.required);
+    for (const f of required) {
+      expect(screen.getByText(`${f.label} is required.`)).toBeInTheDocument();
+    }
+    // Still on the form; nothing was added.
+    expect(screen.getByRole("button", { name: "Add" })).toBeInTheDocument();
+  });
+
+  it(`edits an existing ${config.entityName}`, async () => {
+    render(<App />);
+    const user = await addItem();
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    const control = screen.getByLabelText(mainField.label);
+    await user.clear(control);
+    await user.type(control, "Changed Name");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText("Changed Name")).toBeInTheDocument();
+  });
+
+  it(`deletes a ${config.entityName}`, async () => {
+    render(<App />);
+    const user = await addItem();
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(screen.queryByText(sampleValue(mainField.key))).not.toBeInTheDocument();
+  });
+
+  it("searches by text", async () => {
+    render(<App />);
+    const user = await addItem("Alpha");
+    // add a second, different item (fill every required field)
+    await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+    for (const f of config.fields) {
+      const control = screen.getByLabelText(f.label);
+      const value = f.key === mainField.key ? "Zebra Unique" : sampleValue(f.key, "Second");
+      if (f.type === "select") await user.selectOptions(control, value);
+      else if (f.required && value !== "") { await user.clear(control); await user.type(control, value); }
+      else if (f.key === mainField.key) { await user.clear(control); await user.type(control, value); }
+    }
+    await user.click(screen.getByRole("button", { name: "Add" }));
+
+    await user.type(screen.getByLabelText("Search"), "zebra");
+    expect(screen.getByText("Zebra Unique")).toBeInTheDocument();
+    expect(screen.queryByText(sampleValue(mainField.key, "Alpha"))).not.toBeInTheDocument();
+  });
+
+  it("survives malformed saved data without crashing", async () => {
+    window.localStorage.setItem(config.storageKey, "{not valid json!!");
+    render(<App />);
+    expect(
+      screen.getByRole("button", { name: `Add ${config.entityName}` }),
+    ).toBeInTheDocument();
+  });
+});
+
+if (config.filterField) {
+  describe("category filter", () => {
+    it("filters by the configured dropdown", async () => {
+      const filterField = config.fields.find((f) => f.key === config.filterField)!;
+      const optionA = (filterField.options ?? [])[0];
+      const optionB = (filterField.options ?? [])[1] ?? optionA;
+      render(<App />);
+      const user = userEvent.setup();
+
+      // item with option A
+      await addItem("Alpha");
+      // item with option B (fill every required field)
+      await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+      for (const f of config.fields) {
+        const control = screen.getByLabelText(f.label);
+        if (f.key === filterField.key) { await user.selectOptions(control, optionB); continue; }
+        const value = f.key === mainField.key ? "Second Entry" : sampleValue(f.key, "Second");
+        if (f.type === "select") await user.selectOptions(control, value);
+        else if ((f.required || f.key === mainField.key) && value !== "") { await user.clear(control); await user.type(control, value); }
+      }
+      await user.click(screen.getByRole("button", { name: "Add" }));
+
+      await user.selectOptions(
+        screen.getByLabelText(`Filter by ${filterField.label}`),
+        optionB,
+      );
+      expect(screen.getByText("Second Entry")).toBeInTheDocument();
+      if (optionB !== optionA) {
+        expect(
+          screen.queryByText(sampleValue(mainField.key, "Alpha")),
+        ).not.toBeInTheDocument();
+      }
+    });
+  });
+}
+
+if (config.flag) {
+  describe("flag journeys", () => {
+    const flag = config.flag!;
+    const setAction = config.quickActions.find(
+      (qa) => qa.field === flag.field && qa.when === "empty" && qa.ask !== null,
+    );
+    const clearAction = config.quickActions.find(
+      (qa) => qa.field === flag.field && qa.when === "filled" && qa.ask === null,
+    );
+
+    it("sets and clears the flag via quick actions and updates the count", async () => {
+      if (!setAction || !clearAction) return;
+      render(<App />);
+      // Build an item whose flag field is EMPTY (skip it in the form).
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+      for (const f of config.fields) {
+        if (f.key === flag.field) continue;
+        const control = screen.getByLabelText(f.label);
+        const value = sampleValue(f.key);
+        if (f.type === "select") await user.selectOptions(control, value);
+        else if (value !== "") await user.type(control, value);
+      }
+      await user.click(screen.getByRole("button", { name: "Add" }));
+
+      // Set the flag.
+      await user.click(screen.getByRole("button", { name: setAction.label }));
+      await user.type(screen.getByLabelText(setAction.ask as string), "Sam");
+      await user.click(screen.getByRole("button", { name: "OK" }));
+      expect(screen.getByText(flag.filledLabel)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(`1 ${flag.countLabel}`))).toBeInTheDocument();
+
+      // Filter to flagged only shows it.
+      await user.click(screen.getByLabelText(`${flag.filledLabel} only`));
+      expect(screen.getByText(sampleValue(mainField.key))).toBeInTheDocument();
+      await user.click(screen.getByLabelText(`${flag.filledLabel} only`));
+
+      // Clear the flag.
+      await user.click(screen.getByRole("button", { name: clearAction.label }));
+      expect(screen.queryByText(flag.filledLabel)).not.toBeInTheDocument();
+      expect(screen.getByText(new RegExp(`0 ${flag.countLabel}`))).toBeInTheDocument();
+    });
+  });
+}
