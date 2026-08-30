@@ -7,6 +7,7 @@ import { ItemForm } from "./frame/ItemForm";
 import { ItemList } from "./frame/ItemList";
 import { useItems } from "./frame/useItems";
 import { applyTheme } from "./frame/theme";
+import { computeValue } from "./frame/compute";
 import type { Item } from "./frame/types";
 
 export function App() {
@@ -35,8 +36,18 @@ export function App() {
   const statText = useMemo(() => {
     if (!config.stat) return null;
     const { field, kind, label, prefix = "", suffix = "" } = config.stat;
-    const valid = items.filter((it) => (it.values[field] ?? "").trim() !== "" && !Number.isNaN(Number(it.values[field])));
-    const numbers = valid.map((it) => Number(it.values[field]));
+    const numbers =
+      field === "@computed"
+        ? items
+            .map((it) => computeValue(config, it))
+            .filter((v): v is number => v !== null)
+        : items
+            .filter(
+              (it) =>
+                (it.values[field] ?? "").trim() !== "" &&
+                !Number.isNaN(Number(it.values[field])),
+            )
+            .map((it) => Number(it.values[field]));
     if (numbers.length === 0) return `${label}: ${prefix}0${suffix}`;
     const total = numbers.reduce((a, b) => a + b, 0);
     const value = kind === "sum" ? total : total / numbers.length;

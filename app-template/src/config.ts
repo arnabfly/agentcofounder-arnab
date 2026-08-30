@@ -30,6 +30,7 @@ export const config: AppConfig = {
     { label: "Assign", field: "assignedTo", when: "empty", ask: "Assign to" },
     { label: "Unassign", field: "assignedTo", when: "filled", ask: null },
   ],
+  computed: null,
   stat: null,
   sort: null,
 };

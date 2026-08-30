@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import type { AppConfig, Item } from "./types";
+import { computeValue, formatComputed } from "./compute";
 
 interface Props {
   config: AppConfig;
@@ -58,6 +59,14 @@ export function ItemList({ config, items, totalCount, onEdit, onDelete, onSetFie
                   </span>
                 );
               })}
+              {config.computed ? (() => {
+                const v = computeValue(config, item);
+                return v === null ? null : (
+                  <span className="item-computed">
+                    {config.computed.label}: {formatComputed(config, v)}
+                  </span>
+                );
+              })() : null}
               {flagged && config.flag ? (
                 <span className="badge">{config.flag.filledLabel}</span>
               ) : null}

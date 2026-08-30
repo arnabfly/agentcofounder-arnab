@@ -16,15 +16,25 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink);
-  background: linear-gradient(180deg, #eef2f9 0%, var(--bg) 240px);
+  background: var(--bg);
   min-height: 100vh;
 }
-.shell { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 0;
+}
+/* Center content at a comfortable product width */
+.toolbar, .item-list, .card, .empty-note, .storage-error {
+  width: min(100% - 40px, 960px);
+  margin-left: auto;
+  margin-right: auto;
+}
 .app-header {
-  margin: 0 -16px 18px;
-  padding: 22px 24px 16px;
+  margin: 0 0 22px;
+  padding: 26px max(20px, calc(50vw - 480px)) 20px;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  border-radius: 0 0 18px 18px;
   color: #fff;
   box-shadow: 0 4px 14px rgba(28, 35, 51, 0.18);
 }
@@ -74,7 +84,7 @@ button.danger { color: var(--danger); }
 }
 .field-error { margin: 0; color: var(--danger); font-size: 0.85rem; }
 .form-actions { margin-top: 14px; display: flex; gap: 8px; }
-.item-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.item-list { list-style: none; margin: 0 auto; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .item-row {
   background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
@@ -86,6 +96,7 @@ button.danger { color: var(--danger); }
 .item-main { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
 .item-title { font-weight: 600; }
 .item-detail { color: var(--muted); font-size: 0.9rem; }
+.item-computed { color: var(--accent-dark); font-size: 0.9rem; font-weight: 600; }
 .badge {
   background: var(--accent-soft); color: var(--accent-dark); border: 1px solid var(--accent);
   padding: 1px 8px; border-radius: 999px; font-size: 0.8rem; font-weight: 500;
@@ -103,5 +114,11 @@ button.danger { color: var(--danger); }
   .item-actions { justify-content: flex-start; }
 }
 
-.app-footer { margin-top: 28px; text-align: center; }
-.app-footer p { color: var(--muted); font-size: 0.8rem; }
+.app-footer {
+  margin-top: auto;
+  padding: 14px 20px;
+  text-align: center;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.app-footer p { margin: 0; color: var(--muted); font-size: 0.8rem; }

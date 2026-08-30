@@ -7,6 +7,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { config } from "./config";
+import { computeValue } from "./frame/compute";
 
 function sampleValue(fieldKey: string, suffix = "One"): string {
   const f = config.fields.find((x) => x.key === fieldKey)!;
@@ -34,6 +35,14 @@ async function addItem(suffix = "One") {
 }
 
 const mainField = config.fields[0];
+// Field used for distinct-value assertions: prefer a text field; fall back to main.
+const probeField = config.fields.find((f) => f.type === "text") ?? mainField;
+
+function distinctValue(tag: string): string {
+  if (probeField.type === "date") return "2031-12-25";
+  if (probeField.type === "number") return "7777";
+  return `Zebra ${tag}`;
+}
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -75,11 +84,12 @@ describe("core user journeys", () => {
     render(<App />);
     const user = await addItem();
     await user.click(screen.getByRole("button", { name: "Edit" }));
-    const control = screen.getByLabelText(mainField.label);
+    const control = screen.getByLabelText(probeField.label);
+    const changed = distinctValue("Edited");
     await user.clear(control);
-    await user.type(control, "Changed Name");
+    await user.type(control, changed);
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByText("Changed Name")).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(changed))).toBeInTheDocument();
   });
 
   it(`deletes a ${config.entityName}`, async () => {
@@ -93,19 +103,19 @@ describe("core user journeys", () => {
     render(<App />);
     const user = await addItem("Alpha");
     // add a second, different item (fill every required field)
+    const needle = distinctValue("Unique");
     await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
     for (const f of config.fields) {
       const control = screen.getByLabelText(f.label);
-      const value = f.key === mainField.key ? "Zebra Unique" : sampleValue(f.key, "Second");
+      const value = f.key === probeField.key ? needle : sampleValue(f.key, "Second");
       if (f.type === "select") await user.selectOptions(control, value);
-      else if (f.required && value !== "") { await user.clear(control); await user.type(control, value); }
-      else if (f.key === mainField.key) { await user.clear(control); await user.type(control, value); }
+      else if ((f.required || f.key === probeField.key) && value !== "") { await user.clear(control); await user.type(control, value); }
     }
     await user.click(screen.getByRole("button", { name: "Add" }));
 
-    await user.type(screen.getByLabelText("Search"), "zebra");
-    expect(screen.getByText("Zebra Unique")).toBeInTheDocument();
-    expect(screen.queryByText(sampleValue(mainField.key, "Alpha"))).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Search"), needle.slice(0, 6));
+    expect(screen.getByText(new RegExp(needle))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(sampleValue(mainField.key, "Alpha")))).not.toBeInTheDocument();
   });
 
   it("survives malformed saved data without crashing", async () => {
@@ -129,13 +139,14 @@ if (config.filterField) {
       // item with option A
       await addItem("Alpha");
       // item with option B (fill every required field)
+      const marker = distinctValue("FilterB");
       await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
       for (const f of config.fields) {
         const control = screen.getByLabelText(f.label);
         if (f.key === filterField.key) { await user.selectOptions(control, optionB); continue; }
-        const value = f.key === mainField.key ? "Second Entry" : sampleValue(f.key, "Second");
+        const value = f.key === probeField.key ? marker : sampleValue(f.key, "Second");
         if (f.type === "select") await user.selectOptions(control, value);
-        else if ((f.required || f.key === mainField.key) && value !== "") { await user.clear(control); await user.type(control, value); }
+        else if ((f.required || f.key === probeField.key) && value !== "") { await user.clear(control); await user.type(control, value); }
       }
       await user.click(screen.getByRole("button", { name: "Add" }));
 
@@ -143,10 +154,10 @@ if (config.filterField) {
         screen.getByLabelText(`Filter by ${filterField.label}`),
         optionB,
       );
-      expect(screen.getByText("Second Entry")).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(marker))).toBeInTheDocument();
       if (optionB !== optionA) {
         expect(
-          screen.queryByText(sampleValue(mainField.key, "Alpha")),
+          screen.queryByText(new RegExp(sampleValue(mainField.key, "Alpha"))),
         ).not.toBeInTheDocument();
       }
     });
@@ -206,7 +217,13 @@ if (config.stat) {
       await addItem("One");
       await addItem("Two");
       // sampleValue gives every number field the value 42.
-      const expected = stat.kind === "sum" ? "84" : "42";
+      let per = 42;
+      if (stat.field === "@computed" && config.computed) {
+        const sample: Record<string, string> = {};
+        for (const f of config.fields) sample[f.key] = sampleValue(f.key);
+        per = computeValue(config, { id: "x", values: sample }) ?? 0;
+      }
+      const expected = String(stat.kind === "sum" ? per * 2 : per);
       const prefix = stat.prefix ?? "";
       const suffix = stat.suffix ?? "";
       expect(
@@ -240,6 +257,28 @@ if (config.sort) {
       const titles = screen.getAllByText(/Mango|Apple/).map((n) => n.textContent);
       const expectedOrder = sort.direction === "asc" ? ["Apple", "Mango"] : ["Mango", "Apple"];
       expect(titles[0]).toContain(expectedOrder[0]);
+    });
+  });
+}
+
+if (config.computed) {
+  describe("computed value", () => {
+    const computed = config.computed!;
+    it("shows the computed value on each row", async () => {
+      render(<App />);
+      await addItem("One");
+      // sampleValue gives every number field 42.
+      const ops: Record<string, number> = {
+        multiply: 42 * 42,
+        add: 84,
+        subtract: 0,
+        divide: 1,
+      };
+      const value = ops[computed.op];
+      const text = Number.isInteger(value) ? String(value) : value.toFixed(computed.decimals ?? 2);
+      expect(
+        screen.getByText(new RegExp(`${computed.label}: .*${text}`)),
+      ).toBeInTheDocument();
     });
   });
 }

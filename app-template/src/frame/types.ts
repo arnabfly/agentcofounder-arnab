@@ -68,7 +68,25 @@ export interface AppConfig {
   /** row buttons that set/clear a single field */
   quickActions: QuickAction[];
   /**
-   * Optional derived statistic over a number field, shown in the header.
+   * Optional per-row computed value between two number fields.
+   * Example: { label: "Earnings", a: "cups", b: "price", op: "multiply" }
+   * Shown in every row; can be aggregated by stat via field "@computed".
+   */
+  computed: {
+    label: string;
+    /** key of the first number field */
+    a: string;
+    /** key of the second number field */
+    b: string;
+    op: "multiply" | "add" | "subtract" | "divide";
+    /** decimal places for display (default 2, integers shown plain) */
+    decimals?: number;
+    prefix?: string;
+    suffix?: string;
+  } | null;
+  /**
+   * Optional derived statistic shown in the header.
+   * field: a number field key, or "@computed" to aggregate the computed value.
    * Example: { field: "amount", kind: "sum", label: "Total", suffix: " kr" }
    */
   stat: {
