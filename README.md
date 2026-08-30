@@ -80,6 +80,16 @@ still succeed near baseline cost via the escape hatch.
 - `src/`, `test/` — organizer runner and verifier (upstream, unmodified)
 - `artifacts/runs/` — per-run audit logs
 
+## Model provider
+
+The pipeline is provider-agnostic: `CHALLENGE_PROVIDER` and `CHALLENGE_MODEL`
+select any provider/model supported by the Pi harness at run time — nothing
+in the repository is tied to a specific vendor. OpenRouter with
+`qwen/qwen3-coder` is shown in the quickstart because development and the
+measured results used it; organizer-controlled values work unchanged.
+Providers not built into Pi (e.g. Berget AI) can be added via
+`~/.pi/agent/models.json` — see Pi's provider documentation.
+
 ## Notes for reviewers
 
 - `npm run check` passes (organizer test suite).
