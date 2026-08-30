@@ -197,3 +197,49 @@ if (config.flag) {
     });
   });
 }
+
+if (config.stat) {
+  describe("derived statistic", () => {
+    const stat = config.stat!;
+    it("shows the configured statistic and updates it when items change", async () => {
+      render(<App />);
+      await addItem("One");
+      await addItem("Two");
+      // sampleValue gives every number field the value 42.
+      const expected = stat.kind === "sum" ? "84" : "42";
+      const prefix = stat.prefix ?? "";
+      const suffix = stat.suffix ?? "";
+      expect(
+        screen.getByText(new RegExp(`${stat.label}: ${prefix}${expected}${suffix}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))),
+      ).toBeInTheDocument();
+    });
+  });
+}
+
+if (config.sort) {
+  describe("default ordering", () => {
+    const sort = config.sort!;
+    it("orders the list by the configured field and direction", async () => {
+      const sortField = config.fields.find((f) => f.key === sort.field)!;
+      if (sortField.type !== "text") return; // generic check only for text sorts
+      render(<App />);
+      const user = userEvent.setup();
+      for (const name of ["Mango", "Apple"]) {
+        await user.click(screen.getByRole("button", { name: `Add ${config.entityName}` }));
+        for (const f of config.fields) {
+          const control = screen.getByLabelText(f.label);
+          const value = f.key === sort.field ? name : sampleValue(f.key, name);
+          if (f.type === "select") await user.selectOptions(control, sampleValue(f.key));
+          else if ((f.required || f.key === sort.field) && value !== "") {
+            await user.clear(control);
+            await user.type(control, value);
+          }
+        }
+        await user.click(screen.getByRole("button", { name: "Add" }));
+      }
+      const titles = screen.getAllByText(/Mango|Apple/).map((n) => n.textContent);
+      const expectedOrder = sort.direction === "asc" ? ["Apple", "Mango"] : ["Mango", "Apple"];
+      expect(titles[0]).toContain(expectedOrder[0]);
+    });
+  });
+}

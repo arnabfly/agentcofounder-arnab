@@ -8,6 +8,8 @@
 import type { AppConfig } from "./frame/types";
 
 export const config: AppConfig = {
+  icon: "📋",
+  accent: "blue",
   appTitle: "Sample Tracker",
   entityName: "item",
   entityNamePlural: "items",
@@ -28,4 +30,6 @@ export const config: AppConfig = {
     { label: "Assign", field: "assignedTo", when: "empty", ask: "Assign to" },
     { label: "Unassign", field: "assignedTo", when: "filled", ask: null },
   ],
+  stat: null,
+  sort: null,
 };

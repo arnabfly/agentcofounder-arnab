@@ -35,7 +35,13 @@ export interface QuickAction {
   ask: string | null;
 }
 
+export type AccentName = "blue" | "green" | "violet" | "orange" | "rose" | "teal";
+
 export interface AppConfig {
+  /** One emoji used as the app's logo mark and favicon, e.g. "📚". */
+  icon: string;
+  /** Theme color for the header band and primary buttons. */
+  accent: AccentName;
   /** heading shown at the top */
   appTitle: string;
   /** entity words, e.g. "book" / "books" */
@@ -61,6 +67,19 @@ export interface AppConfig {
   } | null;
   /** row buttons that set/clear a single field */
   quickActions: QuickAction[];
+  /**
+   * Optional derived statistic over a number field, shown in the header.
+   * Example: { field: "amount", kind: "sum", label: "Total", suffix: " kr" }
+   */
+  stat: {
+    field: string;
+    kind: "sum" | "average";
+    label: string;
+    prefix?: string;
+    suffix?: string;
+  } | null;
+  /** Optional default ordering of the list. */
+  sort: { field: string; direction: "asc" | "desc" } | null;
 }
 
 export interface Item {

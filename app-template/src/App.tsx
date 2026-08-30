@@ -1,11 +1,12 @@
 // The application shell: search, filters, summary, form, list.
 // Everything is driven by src/config.ts. The AI never edits this file.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { config } from "./config";
 import { ItemForm } from "./frame/ItemForm";
 import { ItemList } from "./frame/ItemList";
 import { useItems } from "./frame/useItems";
+import { applyTheme } from "./frame/theme";
 import type { Item } from "./frame/types";
 
 export function App() {
@@ -18,6 +19,10 @@ export function App() {
   const [filterValue, setFilterValue] = useState("");
   const [flagOnly, setFlagOnly] = useState(false);
 
+  useEffect(() => {
+    applyTheme(config.icon, config.accent, config.appTitle);
+  }, []);
+
   const filterField = config.filterField
     ? config.fields.find((f) => f.key === config.filterField) ?? null
     : null;
@@ -25,6 +30,18 @@ export function App() {
   const flaggedCount = useMemo(() => {
     if (!config.flag) return 0;
     return items.filter((it) => (it.values[config.flag!.field] ?? "").trim() !== "").length;
+  }, [items]);
+
+  const statText = useMemo(() => {
+    if (!config.stat) return null;
+    const { field, kind, label, prefix = "", suffix = "" } = config.stat;
+    const valid = items.filter((it) => (it.values[field] ?? "").trim() !== "" && !Number.isNaN(Number(it.values[field])));
+    const numbers = valid.map((it) => Number(it.values[field]));
+    if (numbers.length === 0) return `${label}: ${prefix}0${suffix}`;
+    const total = numbers.reduce((a, b) => a + b, 0);
+    const value = kind === "sum" ? total : total / numbers.length;
+    const rounded = Number.isInteger(value) ? String(value) : value.toFixed(2);
+    return `${label}: ${prefix}${rounded}${suffix}`;
   }, [items]);
 
   const visibleItems = useMemo(() => {
@@ -46,20 +63,36 @@ export function App() {
     });
   }, [items, search, filterField, filterValue, flagOnly]);
 
+  const orderedItems = useMemo(() => {
+    if (!config.sort) return visibleItems;
+    const { field, direction } = config.sort;
+    const fieldDef = config.fields.find((f) => f.key === field);
+    const sorted = [...visibleItems].sort((a, b) => {
+      const av = (a.values[field] ?? "").trim();
+      const bv = (b.values[field] ?? "").trim();
+      if (av === "" && bv === "") return 0;
+      if (av === "") return 1;
+      if (bv === "") return -1;
+      let cmp: number;
+      if (fieldDef?.type === "number") cmp = Number(av) - Number(bv);
+      else cmp = av.localeCompare(bv);
+      return direction === "desc" ? -cmp : cmp;
+    });
+    return sorted;
+  }, [visibleItems]);
+
   return (
     <main className="shell">
       <header className="app-header">
-        <h1>{config.appTitle}</h1>
-        {config.flag ? (
-          <p className="summary" aria-live="polite">
-            {items.length} {items.length === 1 ? config.entityName : config.entityNamePlural} ·{" "}
-            {flaggedCount} {config.flag.countLabel}
-          </p>
-        ) : (
-          <p className="summary" aria-live="polite">
-            {items.length} {items.length === 1 ? config.entityName : config.entityNamePlural}
-          </p>
-        )}
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">{config.icon}</span>
+          <h1>{config.appTitle}</h1>
+        </div>
+        <p className="summary" aria-live="polite">
+          {items.length} {items.length === 1 ? config.entityName : config.entityNamePlural}
+          {config.flag ? <> · {flaggedCount} {config.flag.countLabel}</> : null}
+          {statText ? <> · {statText}</> : null}
+        </p>
       </header>
 
       {storageError ? (
@@ -108,7 +141,7 @@ export function App() {
           </div>
           <ItemList
             config={config}
-            items={visibleItems}
+            items={orderedItems}
             totalCount={items.length}
             onEdit={(item) => {
               setEditing(item);
@@ -150,6 +183,9 @@ export function App() {
           }}
         />
       ) : null}
+      <footer className="app-footer">
+        <p>Your data stays in this browser — nothing is sent anywhere.</p>
+      </footer>
     </main>
   );
 }
