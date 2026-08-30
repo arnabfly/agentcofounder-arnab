@@ -1,11 +1,12 @@
-# AgentCofounder — Frame-First Autonomous App Builder
-
-Solo entry by **Arnab** for the Stockholm AI AgentCofounder hackathon.
+# Frame-First Autonomous App Builder
 
 An autonomous pipeline that turns a plain-English product idea into a tested,
-runnable web app — built for **token efficiency first**: the LLM configures a
-pre-built, domain-neutral application frame instead of writing an app from
-scratch.
+runnable web application. Designed for **token efficiency first**: the LLM
+configures a pre-built, domain-neutral application frame instead of generating
+an application from scratch.
+
+Submission for the Stockholm AI AgentCofounder challenge (Contracts-compatible,
+built on the official starter and Pi runner).
 
 ## Quickstart (Linux/macOS, matches the judging environment)
 
@@ -85,3 +86,7 @@ still succeed near baseline cost via the escape hatch.
 - The frame was authored before runs and contains no idea-specific vocabulary;
   generality is demonstrated by the five-idea table above, reproducible via
   the files in `ideas/`.
+
+## Author
+
+Arnab — github.com/arnabfly
