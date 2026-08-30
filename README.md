@@ -32,13 +32,16 @@ The audited bill is in `result.json`; per-run artifacts in `artifacts/runs/`.
 ## How it works
 
 1. **Frame, not freehand.** `app-template/` ships a complete, hand-tested,
-   domain-neutral tracker application (list, add/edit/delete forms with
-   validation, search, dropdown filter, flagged-state toggle with live count,
-   sum/average statistic, sorting, localStorage persistence that survives
-   refresh and malformed data, themed product UI, accessibility, responsive
-   layout). The agent's job shrinks to rewriting **one config file**
-   (`src/config.ts`): entity, fields, filter, flag, quick actions, stat, sort,
-   icon, accent color.
+   domain-neutral tracker application: list and detail views, add/edit/delete
+   forms with validation, search, dropdown filter, flagged-state toggle with
+   live count, per-item computed values (arithmetic between fields or
+   days-since a date), header statistics, sorting, grouping, a CSS bar chart,
+   an optional second related list with linked records, export/import,
+   localStorage persistence that survives refresh and malformed data, themed
+   product UI with light/dark modes, accessibility and responsive layout.
+   The agent's job shrinks to rewriting **one config file** (`src/config.ts`).
+   A config validator runs as the first journey test, so an inconsistent fill
+   fails immediately with a precise message.
 2. **Dormant test suite.** `src/journeys.dormant.tsx` holds config-driven
    journey tests covering every frame capability. The agent activates them
    with a single rename; they adapt to whatever domain the config declares.
@@ -60,17 +63,18 @@ no challenge vocabulary appears outside per-run output.
 Weighted score = input + 3×output + 0.1×cache_read. Unmodified starter
 baseline on the public book idea: **≈ 82,700, status `partial`**.
 
-| Idea | Status | Weighted score |
-|---|---|---|
-| Books (official public idea) | success | ≈ 13,900 |
-| Plants watering log | success | ≈ 11,400 |
-| Shared expenses | success | ≈ 9,600 |
-| Gym workouts | success | ≈ 11,100 |
-| Lemonade stand (stress test: computed per-row value, beyond config) | success | ≈ 71,300 |
+| Idea | Status | Journeys tested | Weighted score |
+|---|---|---|---|
+| Books (official public idea) | success | 12 | ≈ 15,100 |
+| Gym workouts | success | 13 | ≈ 11,400 |
+| Plants watering log | success | 14 | ≈ 20,900 |
+| Shared expenses | success | 9 | ≈ 9,600 |
+| Lemonade stand (per-row computed value + chart) | success | 13 | ≈ 11,000–50,000 (run variance) |
 
-Typical tracker-shaped ideas run ~6–8× cheaper than baseline with a
-better-looking, better-tested app; ideas beyond the frame's expressiveness
-still succeed near baseline cost via the escape hatch.
+Typical tracker-shaped ideas run 4–7× cheaper than baseline while delivering
+a richer, fully tested app (12–14 verified journeys). Ideas needing
+calculations, charts, or related lists are covered through configuration
+alone; the escape hatch remains for anything beyond that.
 
 ## Repository layout
 
