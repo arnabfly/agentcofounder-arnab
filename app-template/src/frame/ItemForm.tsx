@@ -21,7 +21,7 @@ export function validateValues(
   for (const f of fields) {
     const v = (values[f.key] ?? "").trim();
     if (f.required && v === "") {
-      errors[f.key] = `${f.label} is required.`;
+      errors[f.key] = f.type === "checkbox" ? `${f.label} must be checked.` : `${f.label} is required.`;
     } else if (f.type === "number" && v !== "" && Number.isNaN(Number(v))) {
       errors[f.key] = `${f.label} must be a number.`;
     }
@@ -56,7 +56,14 @@ export function ItemForm({ fields, heading, submitLabel, initialValues, onSubmit
         {fields.map((f) => (
           <div className="form-field" key={f.key}>
             <label htmlFor={`field-${f.key}`}>{f.label}</label>
-            {f.type === "select" ? (
+            {f.type === "checkbox" ? (
+              <input
+                id={`field-${f.key}`}
+                type="checkbox"
+                checked={(values[f.key] ?? "") === "yes"}
+                onChange={(e) => setValue(f.key, e.target.checked ? "yes" : "")}
+              />
+            ) : f.type === "select" ? (
               <select
                 id={`field-${f.key}`}
                 value={values[f.key] ?? ""}

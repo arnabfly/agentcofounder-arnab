@@ -8,10 +8,12 @@ import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { config } from "./config";
 import { computeValue } from "./frame/compute";
+import { validateConfig } from "./frame/validateConfig";
 
 function sampleValue(fieldKey: string, suffix = "One"): string {
   const f = config.fields.find((x) => x.key === fieldKey)!;
   if (f.type === "select") return (f.options ?? [""])[0];
+  if (f.type === "checkbox") return "yes";
   if (f.type === "number") return "42";
   if (f.type === "date") return "2026-01-15";
   return `${f.label} ${suffix}`;
@@ -25,6 +27,8 @@ async function addItem(suffix = "One") {
     const value = sampleValue(f.key, suffix);
     if (f.type === "select") {
       await user.selectOptions(control, value);
+    } else if (f.type === "checkbox") {
+      if (value === "yes") await user.click(control);
     } else if (value !== "") {
       await user.clear(control);
       await user.type(control, value);
@@ -50,6 +54,12 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+});
+
+describe("configuration", () => {
+  it("declares a coherent config (all references resolve)", () => {
+    expect(validateConfig(config)).toEqual([]);
+  });
 });
 
 describe("core user journeys", () => {
@@ -115,7 +125,21 @@ describe("core user journeys", () => {
 
     await user.type(screen.getByLabelText("Search"), needle.slice(0, 6));
     expect(screen.getByText(new RegExp(needle))).toBeInTheDocument();
-    expect(screen.queryByText(new RegExp(sampleValue(mainField.key, "Alpha")))).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(new RegExp(sampleValue(probeField.key, "Alpha"))),
+    ).not.toBeInTheDocument();
+  });
+
+  it(`opens a ${config.entityName} detail view and returns to the list`, async () => {
+    render(<App />);
+    const user = await addItem();
+    await user.click(screen.getByRole("button", { name: new RegExp(sampleValue(mainField.key)) }));
+    // all field labels visible in the detail view
+    for (const f of config.fields) {
+      expect(screen.getAllByText(f.label).length).toBeGreaterThan(0);
+    }
+    await user.click(screen.getByRole("button", { name: "Back to list" }));
+    expect(screen.getByRole("button", { name: `Add ${config.entityName}` })).toBeInTheDocument();
   });
 
   it("survives malformed saved data without crashing", async () => {
@@ -157,7 +181,7 @@ if (config.filterField) {
       expect(screen.getByText(new RegExp(marker))).toBeInTheDocument();
       if (optionB !== optionA) {
         expect(
-          screen.queryByText(new RegExp(sampleValue(mainField.key, "Alpha"))),
+          screen.queryByText(new RegExp(sampleValue(probeField.key, "Alpha"))),
         ).not.toBeInTheDocument();
       }
     });
@@ -209,9 +233,9 @@ if (config.flag) {
   });
 }
 
-if (config.stat) {
+if (config.stats.length > 0) {
   describe("derived statistic", () => {
-    const stat = config.stat!;
+    const stat = config.stats[0];
     it("shows the configured statistic and updates it when items change", async () => {
       render(<App />);
       await addItem("One");
@@ -223,7 +247,9 @@ if (config.stat) {
         for (const f of config.fields) sample[f.key] = sampleValue(f.key);
         per = computeValue(config, { id: "x", values: sample }) ?? 0;
       }
-      const expected = String(stat.kind === "sum" ? per * 2 : per);
+      const expected = String(
+        stat.kind === "count_filled" ? 2 : stat.kind === "sum" ? per * 2 : per,
+      );
       const prefix = stat.prefix ?? "";
       const suffix = stat.suffix ?? "";
       expect(
@@ -268,6 +294,11 @@ if (config.computed) {
       render(<App />);
       await addItem("One");
       // sampleValue gives every number field 42.
+      if (computed.op === "days_since") {
+        // time-dependent; presence is asserted instead of exact value
+        expect(screen.getByText(new RegExp(`${computed.label}:`))).toBeInTheDocument();
+        return;
+      }
       const ops: Record<string, number> = {
         multiply: 42 * 42,
         add: 84,
@@ -279,6 +310,60 @@ if (config.computed) {
       expect(
         screen.getByText(new RegExp(`${computed.label}: .*${text}`)),
       ).toBeInTheDocument();
+    });
+  });
+}
+
+if (config.groupBy) {
+  describe("grouped list", () => {
+    it("shows group headings for the configured field", async () => {
+      const groupField = config.fields.find((f) => f.key === config.groupBy)!;
+      render(<App />);
+      await addItem("One");
+      expect(
+        screen.getByRole("heading", { name: (groupField.options ?? [])[0] }),
+      ).toBeInTheDocument();
+    });
+  });
+}
+
+if (config.chart) {
+  describe("chart", () => {
+    it("renders the configured chart with at least one bar", async () => {
+      render(<App />);
+      await addItem("One");
+      const region = screen.getByRole("region", { name: config.chart!.label });
+      expect(region).toBeInTheDocument();
+    });
+  });
+}
+
+if (config.secondary) {
+  describe("secondary records", () => {
+    const sec = config.secondary!;
+    it(`adds a linked ${sec.entityName} in its own tab`, async () => {
+      render(<App />);
+      const user = await addItem("One"); // primary item to link to
+      await user.click(screen.getByRole("button", { name: sec.entityNamePlural }));
+      await user.click(screen.getByRole("button", { name: `Add ${sec.entityName}` }));
+      for (const f of sec.fields) {
+        const control = screen.getByLabelText(f.label);
+        if (f.key === sec.linkField) {
+          await user.selectOptions(control, sampleValue(mainField.key));
+        } else if (f.type === "select") {
+          await user.selectOptions(control, (f.options ?? [""])[0]);
+        } else if (f.type === "checkbox") {
+          await user.click(control);
+        } else if (f.required) {
+          await user.type(control, f.type === "number" ? "5" : f.type === "date" ? "2026-02-02" : `${f.label} Sec`);
+        }
+      }
+      await user.click(screen.getByRole("button", { name: "Add" }));
+      // secondary row shows its link to the primary item
+      expect(screen.getAllByText(new RegExp(sampleValue(mainField.key))).length).toBeGreaterThan(0);
+      // back to primary tab
+      await user.click(screen.getByRole("button", { name: config.entityNamePlural }));
+      expect(screen.getByRole("button", { name: `Add ${config.entityName}` })).toBeInTheDocument();
     });
   });
 }

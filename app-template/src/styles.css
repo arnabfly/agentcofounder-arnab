@@ -122,3 +122,55 @@ button.danger { color: var(--danger); }
   border-top: 1px solid var(--line);
 }
 .app-footer p { margin: 0; color: var(--muted); font-size: 0.8rem; }
+
+.item-check { color: var(--accent-dark); font-size: 0.9rem; font-weight: 500; }
+.import-label {
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card); font-size: 0.95rem; cursor: pointer;
+}
+.import-label:hover { border-color: var(--accent); }
+.onboarding { padding: 28px; }
+.onboarding-title { font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+
+.group-section { width: min(100% - 40px, 960px); margin: 0 auto 14px; }
+.group-heading { font-size: 1rem; color: var(--muted); margin: 12px 0 8px; }
+.group-section .item-list { width: 100%; }
+
+:root.dark {
+  color-scheme: dark;
+  --ink: #e8ebf2;
+  --muted: #9aa3b5;
+  --line: #333a4a;
+  --bg: #141821;
+  --card: #1d2330;
+}
+:root.dark .app-footer { background: #1a1f2b; }
+
+@media print {
+  .toolbar, .item-actions, .app-footer, .form-actions { display: none !important; }
+  .app-header { background: none; color: var(--ink); box-shadow: none; }
+  .app-header h1, .summary { color: var(--ink); }
+  .item-row { box-shadow: none; break-inside: avoid; }
+}
+
+.item-title.link {
+  border: none; background: none; padding: 0; font: inherit; font-weight: 600;
+  color: var(--ink); cursor: pointer; text-align: left;
+}
+.item-title.link:hover { color: var(--accent); text-decoration: underline; }
+.detail-card h2 { margin-top: 0; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 20px; margin: 0 0 14px; }
+.detail-row dt { font-size: 0.8rem; color: var(--muted); }
+.detail-row dd { margin: 2px 0 0; font-size: 1rem; }
+
+.chart-card h2 { margin: 0 0 10px; font-size: 1.05rem; }
+.chart-rows { display: flex; flex-direction: column; gap: 6px; }
+.chart-row { display: grid; grid-template-columns: minmax(70px, 160px) 1fr 60px; gap: 10px; align-items: center; }
+.chart-name { font-size: 0.85rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-track { background: var(--accent-soft); border-radius: 6px; height: 16px; overflow: hidden; }
+.chart-bar { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
+.chart-value { font-size: 0.85rem; text-align: right; }
+
+.tabs { width: min(100% - 40px, 960px); margin: -6px auto 14px; display: flex; gap: 6px; }
+.tab { border-radius: 999px; padding: 6px 16px; }
+.tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }

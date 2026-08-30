@@ -12,7 +12,8 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "preview": "vite preview --host 0.0.0.0 --port 3000 --strictPort",
-    "report": "node scripts/report.mjs"
+    "report": "node scripts/report.mjs",
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "react": "19.2.0",

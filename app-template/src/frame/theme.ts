@@ -12,9 +12,10 @@ export const ACCENTS: Record<AccentName, { main: string; dark: string; soft: str
   teal:   { main: "#0c8599", dark: "#086575", soft: "#e5f4f7" },
 };
 
-export function applyTheme(icon: string, accent: AccentName, title: string): void {
+export function applyTheme(icon: string, accent: AccentName, title: string, mode: "light" | "dark" = "light"): void {
   const palette = ACCENTS[accent] ?? ACCENTS.blue;
   const root = document.documentElement;
+  root.classList.toggle("dark", mode === "dark");
   root.style.setProperty("--accent", palette.main);
   root.style.setProperty("--accent-dark", palette.dark);
   root.style.setProperty("--accent-soft", palette.soft);

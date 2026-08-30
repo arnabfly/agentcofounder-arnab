@@ -1,7 +1,7 @@
 // Frame types: the vocabulary shared by config, storage, UI, and tests.
 // The AI never edits this file. It only edits src/config.ts.
 
-export type FieldType = "text" | "select" | "number" | "date";
+export type FieldType = "text" | "select" | "number" | "date" | "checkbox";
 
 export interface FieldDef {
   /** internal key, e.g. "title" */
@@ -74,30 +74,52 @@ export interface AppConfig {
    */
   computed: {
     label: string;
-    /** key of the first number field */
+    /** key of the first field (number; or date for days_since) */
     a: string;
-    /** key of the second number field */
-    b: string;
-    op: "multiply" | "add" | "subtract" | "divide";
+    /** key of the second number field (omit for days_since) */
+    b?: string;
+    op: "multiply" | "add" | "subtract" | "divide" | "days_since";
     /** decimal places for display (default 2, integers shown plain) */
     decimals?: number;
     prefix?: string;
     suffix?: string;
   } | null;
   /**
-   * Optional derived statistic shown in the header.
+   * Derived statistics shown in the header (empty array = none).
    * field: a number field key, or "@computed" to aggregate the computed value.
-   * Example: { field: "amount", kind: "sum", label: "Total", suffix: " kr" }
+   * Example: [{ field: "amount", kind: "sum", label: "Total", suffix: " kr" }]
    */
-  stat: {
+  stats: {
     field: string;
-    kind: "sum" | "average";
+    kind: "sum" | "average" | "count_filled";
     label: string;
     prefix?: string;
     suffix?: string;
-  } | null;
+  }[];
   /** Optional default ordering of the list. */
   sort: { field: string; direction: "asc" | "desc" } | null;
+  /**
+   * Optional simple bar chart, or null.
+   * value: a number field key or "@computed"; over: a select or date field
+   * whose values become the buckets. Bars show the SUM of value per bucket.
+   */
+  chart: { value: string; over: string; label: string } | null;
+  /** Optional: key of a select field to group the list under headings, or null. */
+  groupBy: string | null;
+  /** Color scheme of the app. */
+  mode: "light" | "dark";
+  /**
+   * Optional second, related list of records (own tab), or null.
+   * linkField: key of a secondary field that references a primary item;
+   * it is rendered as a dropdown of the primary items' main-field values.
+   */
+  secondary: {
+    entityName: string;
+    entityNamePlural: string;
+    storageKey: string;
+    fields: FieldDef[];
+    linkField: string | null;
+  } | null;
 }
 
 export interface Item {

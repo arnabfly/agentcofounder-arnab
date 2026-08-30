@@ -10,7 +10,7 @@ const REPORT_JSON = ".vitest-report.json";
 // 1) Run the test suite with a JSON reporter.
 const run = spawnSync(
   "npx",
-  ["vitest", "run", "--reporter=json", `--outputFile=${REPORT_JSON}`],
+  ["vitest", "run", "--reporter=json", `--outputFile=${REPORT_JSON}`, "--maxWorkers=1"],
   { encoding: "utf8" },
 );
 

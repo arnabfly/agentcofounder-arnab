@@ -6,10 +6,17 @@ import type { AppConfig, Item } from "./types";
 export function computeValue(config: AppConfig, item: Item): number | null {
   if (!config.computed) return null;
   const { a, b, op } = config.computed;
-  const av = Number((item.values[a] ?? "").trim());
-  const bv = Number((item.values[b] ?? "").trim());
-  if (Number.isNaN(av) || Number.isNaN(bv)) return null;
-  if ((item.values[a] ?? "").trim() === "" || (item.values[b] ?? "").trim() === "") return null;
+  const rawA = (item.values[a] ?? "").trim();
+  if (op === "days_since") {
+    if (rawA === "") return null;
+    const t = Date.parse(rawA);
+    if (Number.isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  }
+  const rawB = (item.values[b ?? ""] ?? "").trim();
+  const av = Number(rawA);
+  const bv = Number(rawB);
+  if (rawA === "" || rawB === "" || Number.isNaN(av) || Number.isNaN(bv)) return null;
   switch (op) {
     case "multiply": return av * bv;
     case "add": return av + bv;

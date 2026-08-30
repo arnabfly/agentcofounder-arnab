@@ -10,11 +10,12 @@ interface Props {
   items: Item[];
   totalCount: number;
   onEdit: (item: Item) => void;
+  onView?: (item: Item) => void;
   onDelete: (id: string) => void;
   onSetField: (id: string, field: string, value: string) => void;
 }
 
-export function ItemList({ config, items, totalCount, onEdit, onDelete, onSetField }: Props) {
+export function ItemList({ config, items, totalCount, onEdit, onView, onDelete, onSetField }: Props) {
   const [asking, setAsking] = useState<{ itemId: string; field: string; label: string } | null>(null);
   const [askValue, setAskValue] = useState("");
 
@@ -23,9 +24,13 @@ export function ItemList({ config, items, totalCount, onEdit, onDelete, onSetFie
 
   if (totalCount === 0) {
     return (
-      <p className="empty-note">
-        No {config.entityNamePlural} yet. Use “Add {config.entityName}” to create the first one.
-      </p>
+      <div className="empty-note onboarding">
+        <p className="onboarding-title">Nothing here yet</p>
+        <p>
+          Add your first {config.entityName} with the “Add {config.entityName}” button above.
+          Everything you add is saved automatically in this browser.
+        </p>
+      </div>
     );
   }
   if (items.length === 0) {
@@ -49,10 +54,26 @@ export function ItemList({ config, items, totalCount, onEdit, onDelete, onSetFie
         return (
           <li key={item.id} className="item-row">
             <div className="item-main">
-              <span className="item-title">{item.values[mainField.key] || "(untitled)"}</span>
+              {onView ? (
+                <button
+                  type="button"
+                  className="item-title link"
+                  onClick={() => onView(item)}
+                  title="Open details"
+                >
+                  {item.values[mainField.key] || "(untitled)"}
+                </button>
+              ) : (
+                <span className="item-title">{item.values[mainField.key] || "(untitled)"}</span>
+              )}
               {restFields.map((f) => {
                 const v = (item.values[f.key] ?? "").trim();
                 if (v === "") return null;
+                if (f.type === "checkbox") {
+                  return (
+                    <span key={f.key} className="item-check">✓ {f.label}</span>
+                  );
+                }
                 return (
                   <span key={f.key} className="item-detail">
                     {f.label}: {v}

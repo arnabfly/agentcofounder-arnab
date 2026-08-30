@@ -31,6 +31,10 @@ export const config: AppConfig = {
     { label: "Unassign", field: "assignedTo", when: "filled", ask: null },
   ],
   computed: null,
-  stat: null,
+  stats: [],
   sort: null,
+  chart: null,
+  groupBy: null,
+  mode: "light",
+  secondary: null,
 };
