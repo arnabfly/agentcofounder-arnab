@@ -38,6 +38,10 @@ async function addItem(suffix = "One") {
   return user;
 }
 
+function rx(text: string): RegExp {
+  return new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+}
+
 const mainField = config.fields[0];
 // Field used for distinct-value assertions: prefer a text field; fall back to main.
 const probeField = config.fields.find((f) => f.type === "text") ?? mainField;
@@ -99,7 +103,7 @@ describe("core user journeys", () => {
     await user.clear(control);
     await user.type(control, changed);
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByText(new RegExp(changed))).toBeInTheDocument();
+    expect(screen.getByText(rx(changed))).toBeInTheDocument();
   });
 
   it(`deletes a ${config.entityName}`, async () => {
@@ -124,16 +128,16 @@ describe("core user journeys", () => {
     await user.click(screen.getByRole("button", { name: "Add" }));
 
     await user.type(screen.getByLabelText("Search"), needle.slice(0, 6));
-    expect(screen.getByText(new RegExp(needle))).toBeInTheDocument();
+    expect(screen.getByText(rx(needle))).toBeInTheDocument();
     expect(
-      screen.queryByText(new RegExp(sampleValue(probeField.key, "Alpha"))),
+      screen.queryByText(rx(sampleValue(probeField.key, "Alpha"))),
     ).not.toBeInTheDocument();
   });
 
   it(`opens a ${config.entityName} detail view and returns to the list`, async () => {
     render(<App />);
     const user = await addItem();
-    await user.click(screen.getByRole("button", { name: new RegExp(sampleValue(mainField.key)) }));
+    await user.click(screen.getByRole("button", { name: rx(sampleValue(mainField.key)) }));
     // all field labels visible in the detail view
     for (const f of config.fields) {
       expect(screen.getAllByText(f.label).length).toBeGreaterThan(0);
@@ -178,10 +182,10 @@ if (config.filterField) {
         screen.getByLabelText(`Filter by ${filterField.label}`),
         optionB,
       );
-      expect(screen.getByText(new RegExp(marker))).toBeInTheDocument();
+      expect(screen.getByText(rx(marker))).toBeInTheDocument();
       if (optionB !== optionA) {
         expect(
-          screen.queryByText(new RegExp(sampleValue(probeField.key, "Alpha"))),
+          screen.queryByText(rx(sampleValue(probeField.key, "Alpha"))),
         ).not.toBeInTheDocument();
       }
     });
@@ -218,7 +222,7 @@ if (config.flag) {
       await user.type(screen.getByLabelText(setAction.ask as string), "Sam");
       await user.click(screen.getByRole("button", { name: "OK" }));
       expect(screen.getByText(flag.filledLabel)).toBeInTheDocument();
-      expect(screen.getByText(new RegExp(`1 ${flag.countLabel}`))).toBeInTheDocument();
+      expect(screen.getByText(rx(`1 ${flag.countLabel}`))).toBeInTheDocument();
 
       // Filter to flagged only shows it.
       await user.click(screen.getByLabelText(`${flag.filledLabel} only`));
@@ -228,7 +232,7 @@ if (config.flag) {
       // Clear the flag.
       await user.click(screen.getByRole("button", { name: clearAction.label }));
       expect(screen.queryByText(flag.filledLabel)).not.toBeInTheDocument();
-      expect(screen.getByText(new RegExp(`0 ${flag.countLabel}`))).toBeInTheDocument();
+      expect(screen.getByText(rx(`0 ${flag.countLabel}`))).toBeInTheDocument();
     });
   });
 }
@@ -253,7 +257,7 @@ if (config.stats.length > 0) {
       const prefix = stat.prefix ?? "";
       const suffix = stat.suffix ?? "";
       expect(
-        screen.getByText(new RegExp(`${stat.label}: ${prefix}${expected}${suffix}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))),
+        screen.getByText(rx(`${stat.label}: ${prefix}${expected}${suffix}`)),
       ).toBeInTheDocument();
     });
   });
@@ -296,7 +300,7 @@ if (config.computed) {
       // sampleValue gives every number field 42.
       if (computed.op === "days_since") {
         // time-dependent; presence is asserted instead of exact value
-        expect(screen.getByText(new RegExp(`${computed.label}:`))).toBeInTheDocument();
+        expect(screen.getAllByText(rx(`${computed.label}:`)).length).toBeGreaterThan(0);
         return;
       }
       const ops: Record<string, number> = {
@@ -307,9 +311,9 @@ if (config.computed) {
       };
       const value = ops[computed.op];
       const text = Number.isInteger(value) ? String(value) : value.toFixed(computed.decimals ?? 2);
-      expect(
-        screen.getByText(new RegExp(`${computed.label}: .*${text}`)),
-      ).toBeInTheDocument();
+      const shown = screen.getAllByText(rx(`${computed.label}:`));
+      expect(shown.length).toBeGreaterThan(0);
+      expect(shown.some((n) => (n.textContent ?? "").includes(text))).toBe(true);
     });
   });
 }
@@ -360,7 +364,7 @@ if (config.secondary) {
       }
       await user.click(screen.getByRole("button", { name: "Add" }));
       // secondary row shows its link to the primary item
-      expect(screen.getAllByText(new RegExp(sampleValue(mainField.key))).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(rx(sampleValue(mainField.key))).length).toBeGreaterThan(0);
       // back to primary tab
       await user.click(screen.getByRole("button", { name: config.entityNamePlural }));
       expect(screen.getByRole("button", { name: `Add ${config.entityName}` })).toBeInTheDocument();
