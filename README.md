@@ -3,6 +3,8 @@
 Submission for the Stockholm AI AgentCofounder challenge, built on the official
 starter and the Pi coding agent.
 
+Demo video: https://youtu.be/JeWa5BUpLW0
+
 The pipeline turns a plain-English product idea into a tested, runnable web
 app. The main design decision is to make the LLM configure a pre-built,
 domain-neutral application frame instead of generating an application from
