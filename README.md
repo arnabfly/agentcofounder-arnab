@@ -3,6 +3,7 @@
 Submission for the Stockholm AI AgentCofounder challenge, built on the official
 starter and the Pi coding agent.
 
+[![Demo video](https://img.youtube.com/vi/JeWa5BUpLW0/maxresdefault.jpg)](https://youtu.be/JeWa5BUpLW0)
 Demo video: https://youtu.be/JeWa5BUpLW0
 
 The pipeline turns a plain-English product idea into a tested, runnable web
