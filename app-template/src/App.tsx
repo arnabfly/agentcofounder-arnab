@@ -6,6 +6,16 @@ import { config } from "./config";
 import { ItemForm } from "./frame/ItemForm";
 import { ItemList } from "./frame/ItemList";
 import { Chart } from "./frame/Chart";
+import { Review } from "./frame/Review";
+import type { ComponentType } from "react";
+import type { CustomPanelProps } from "./frame/types";
+
+// Optional extension slot: if src/custom.tsx exists, it renders as a panel.
+const customModules = import.meta.glob<{ default: ComponentType<CustomPanelProps> }>(
+  "./custom.tsx",
+  { eager: true },
+);
+const CustomPanel = customModules["./custom.tsx"]?.default ?? null;
 import { useItems } from "./frame/useItems";
 import { applyTheme } from "./frame/theme";
 import { computeValue, formatComputed } from "./frame/compute";
@@ -15,7 +25,7 @@ export function App() {
   const { items, storageError, addItem, updateItem, setField, deleteItem } = useItems(
     config.storageKey,
   );
-  const [mode, setMode] = useState<"list" | "add" | "edit" | "detail">("list");
+  const [mode, setMode] = useState<"list" | "add" | "edit" | "detail" | "review">("list");
   const [viewing, setViewing] = useState<Item | null>(null);
   const [tab, setTab] = useState<"primary" | "secondary">("primary");
   const sec = config.secondary;
@@ -201,6 +211,11 @@ export function App() {
                 ))}
               </select>
             ) : null}
+            {config.review ? (
+              <button type="button" className="primary" onClick={() => setMode("review")}>
+                {config.review.label ?? "Review"}
+              </button>
+            ) : null}
             <button type="button" onClick={exportData} title="Download all data as a file">
               Export
             </button>
@@ -228,6 +243,18 @@ export function App() {
               </label>
             ) : null}
           </div>
+          {CustomPanel ? (
+            <div className="custom-panel">
+              <CustomPanel
+                config={config}
+                items={items}
+                addItem={addItem}
+                updateItem={updateItem}
+                setField={setField}
+                deleteItem={deleteItem}
+              />
+            </div>
+          ) : null}
           {config.chart ? <Chart config={config} items={items} /> : null}
           {(() => {
             const groupField = config.groupBy
@@ -279,6 +306,15 @@ export function App() {
             setMode("list");
           }}
           onCancel={() => setMode("list")}
+        />
+      ) : null}
+
+      {tab === "primary" && mode === "review" && config.review ? (
+        <Review
+          config={config}
+          items={orderedItems}
+          onSetField={setField}
+          onExit={() => setMode("list")}
         />
       ) : null}
 

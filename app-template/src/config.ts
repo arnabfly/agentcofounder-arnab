@@ -36,5 +36,6 @@ export const config: AppConfig = {
   chart: null,
   groupBy: null,
   mode: "light",
+  review: null,
   secondary: null,
 };

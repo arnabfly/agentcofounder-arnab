@@ -73,6 +73,19 @@ export function validateConfig(c: AppConfig): string[] {
     if (!f) problems.push(`groupBy "${c.groupBy}" is not a field key`);
     else if (f.type !== "select") problems.push(`groupBy "${c.groupBy}" must be a select field`);
   }
+  if (c.review !== null) {
+    const r = c.review;
+    if (!keys.has(r.frontField)) problems.push(`review.frontField "${r.frontField}" is not a field key`);
+    for (const bk of r.backFields) {
+      if (!keys.has(bk)) problems.push(`review backField "${bk}" is not a field key`);
+    }
+    if (r.backFields.length === 0) problems.push("review.backFields is empty");
+    if (r.resultField !== null) {
+      const f = fieldOf(r.resultField);
+      if (!f) problems.push(`review.resultField "${r.resultField}" is not a field key`);
+      else if (f.type !== "checkbox") problems.push(`review.resultField "${r.resultField}" must be a checkbox field`);
+    }
+  }
   if (c.secondary !== null) {
     const sec = c.secondary;
     if (sec.storageKey === c.storageKey) problems.push("secondary.storageKey must differ from primary storageKey");

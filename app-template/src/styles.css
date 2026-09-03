@@ -174,3 +174,17 @@ button.danger { color: var(--danger); }
 .tabs { width: min(100% - 40px, 960px); margin: -6px auto 14px; display: flex; gap: 6px; }
 .tab { border-radius: 999px; padding: 6px 16px; }
 .tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.review-card { text-align: center; }
+.review-progress { color: var(--muted); font-size: 0.85rem; margin: 0 0 10px; }
+.review-front { font-size: 1.6rem; font-weight: 600; margin: 18px 0; }
+.review-back { text-align: left; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; margin: 0 0 8px; }
+.review-summary { font-size: 1.1rem; }
+.review-card .form-actions { justify-content: center; }
+
+.custom-panel {
+  width: min(100% - 40px, 960px);
+  margin: 0 auto 14px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; box-shadow: 0 2px 8px rgba(28, 35, 51, 0.06);
+}

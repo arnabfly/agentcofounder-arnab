@@ -371,3 +371,34 @@ if (config.secondary) {
     });
   });
 }
+
+if (config.review) {
+  describe("review mode", () => {
+    const review = config.review!;
+    it("steps through items, flips, and records the result", async () => {
+      render(<App />);
+      const user = await addItem("One");
+      await user.click(
+        screen.getByRole("button", { name: review.label ?? "Review" }),
+      );
+      // front visible, back hidden until flip
+      const frontValue = sampleValue(review.frontField);
+      expect(screen.getByText(rx(frontValue))).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Show answer" }));
+      const backLabel = config.fields.find((f) => f.key === review.backFields[0])!.label;
+      expect(screen.getAllByText(rx(backLabel)).length).toBeGreaterThan(0);
+      // mark or advance to finish the round
+      if (review.resultField !== null) {
+        await user.click(screen.getByRole("button", { name: "Got it right" }));
+        expect(screen.getByText(rx("1 of 1"))).toBeInTheDocument();
+      } else {
+        await user.click(screen.getByRole("button", { name: "Next" }));
+        expect(screen.getByText(/Round complete/)).toBeInTheDocument();
+      }
+      await user.click(screen.getByRole("button", { name: "Back to list" }));
+      expect(
+        screen.getByRole("button", { name: `Add ${config.entityName}` }),
+      ).toBeInTheDocument();
+    });
+  });
+}

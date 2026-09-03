@@ -109,6 +109,21 @@ export interface AppConfig {
   /** Color scheme of the app. */
   mode: "light" | "dark";
   /**
+   * Optional step-through review/practice mode, or null.
+   * Shows one item at a time: front first, flip reveals back fields,
+   * optional right/wrong marking writes to a checkbox field.
+   */
+  review: {
+    /** field shown as the front of the card */
+    frontField: string;
+    /** fields revealed after flipping */
+    backFields: string[];
+    /** checkbox field set by Right/Wrong marking, or null for flip-only */
+    resultField: string | null;
+    /** toolbar button label, e.g. "Practice" (default "Review") */
+    label?: string;
+  } | null;
+  /**
    * Optional second, related list of records (own tab), or null.
    * linkField: key of a secondary field that references a primary item;
    * it is rendered as a dropdown of the primary items' main-field values.
@@ -125,4 +140,17 @@ export interface AppConfig {
 export interface Item {
   id: string;
   values: Record<string, string>;
+}
+
+/**
+ * Props handed to the optional custom panel (src/custom.tsx).
+ * The frame renders that file automatically when it exists.
+ */
+export interface CustomPanelProps {
+  config: AppConfig;
+  items: Item[];
+  addItem: (values: Record<string, string>) => void;
+  updateItem: (id: string, values: Record<string, string>) => void;
+  setField: (id: string, field: string, value: string) => void;
+  deleteItem: (id: string) => void;
 }
